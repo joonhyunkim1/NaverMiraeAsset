@@ -181,8 +181,8 @@ class StockExtractor:
     def load_clova_analysis(self) -> Optional[Dict]:
         """CLOVA 분석 결과 로드"""
         try:
-            # 가장 최근 분석 결과 파일 찾기
-            analysis_files = list(self.data_dir.glob("clova_analysis_*.json"))
+            # 가장 최근 분석 결과 파일 찾기 (LlamaIndex RAG 분석 결과 포함)
+            analysis_files = list(self.data_dir.glob("*analysis_*.json"))
             if not analysis_files:
                 print("❌ CLOVA 분석 결과 파일을 찾을 수 없습니다.")
                 return None
@@ -370,6 +370,34 @@ class StockExtractor:
         
         return collected_data
     
+    def save_extraction_result(self, stock_names: List[str]) -> str:
+        """추출된 종목명 결과 저장"""
+        if not stock_names:
+            print("❌ 저장할 종목명이 없습니다.")
+            return ""
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"extracted_stocks_{timestamp}.json"
+        file_path = self.output_dir / filename
+        
+        try:
+            # 저장할 데이터 구성
+            save_data = {
+                "extraction_time": datetime.now().isoformat(),
+                "total_stocks": len(stock_names),
+                "extracted_stocks": stock_names
+            }
+            
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(save_data, f, ensure_ascii=False, indent=2)
+            
+            print(f"✅ 추출 결과 저장 완료: {file_path}")
+            return str(file_path)
+            
+        except Exception as e:
+            print(f"❌ 추출 결과 저장 실패: {e}")
+            return ""
+    
     def save_collected_data(self, collected_data: List[Dict[str, Any]]) -> str:
         """수집된 데이터 저장"""
         if not collected_data:
@@ -398,10 +426,34 @@ class StockExtractor:
             print(f"❌ 데이터 저장 실패: {e}")
             return ""
     
+    def get_extracted_stocks(self) -> List[str]:
+        """추출된 종목명 리스트 반환"""
+        try:
+            # CLOVA 분석 결과 로드
+            analysis_data = self.load_clova_analysis()
+            
+            if analysis_data is None:
+                print("❌ CLOVA 분석 결과 로드 실패")
+                return []
+            
+            # 종목명 추출
+            stock_names = self.extract_stock_names(analysis_data['result'])
+            
+            if stock_names:
+                print(f"📈 추출된 종목명: {stock_names}")
+                return stock_names
+            else:
+                print("❌ 추출된 종목이 없습니다.")
+                return []
+                
+        except Exception as e:
+            print(f"❌ 종목명 추출 오류: {e}")
+            return []
+    
     def run_extraction(self) -> bool:
-        """전체 추출 프로세스 실행"""
+        """종목 추출 프로세스 실행 (데이터 수집 제외)"""
         print("=" * 60)
-        print("🚀 주식 종목 추출 및 데이터 수집 시스템")
+        print("🚀 주식 종목 추출 시스템")
         print("=" * 60)
         
         # 1. CLOVA 분석 결과 로드
@@ -421,26 +473,19 @@ class StockExtractor:
             return False
         
         print(f"📈 추출된 종목 수: {len(stock_names)}개")
+        print(f"📊 추출된 종목: {stock_names}")
         
-        # 3. 주가 데이터 수집
-        print("\n3️⃣ 주가 데이터 수집 중...")
-        collected_data = self.collect_stock_data(stock_names)
-        
-        if not collected_data:
-            print("❌ 수집된 데이터가 없습니다.")
-            return False
-        
-        # 4. 데이터 저장
-        print("\n4️⃣ 수집된 데이터 저장 중...")
-        saved_path = self.save_collected_data(collected_data)
+        # 3. 추출 결과 저장 (JSON 형태로만)
+        print("\n3️⃣ 추출 결과 저장 중...")
+        saved_path = self.save_extraction_result(stock_names)
         
         if saved_path:
-            print(f"\n🎉 추출 및 수집 완료!")
+            print(f"\n🎉 종목 추출 완료!")
             print(f"📁 결과 파일: {saved_path}")
-            print(f"📊 수집된 종목 수: {len(collected_data)}개")
+            print(f"📊 추출된 종목 수: {len(stock_names)}개")
             return True
         
-        print("\n❌ 데이터 저장 실패")
+        print("\n❌ 추출 결과 저장 실패")
         return False
 
 def main():

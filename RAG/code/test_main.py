@@ -10,7 +10,7 @@
 from datetime import datetime
 from krx_api_client import KRXAPIClient
 from naver_news_client import NaverNewsClient
-from data_analyzer import DataAnalyzer
+from llamaindex_data_analyzer import LlamaIndexDataAnalyzer
 from stock_extractor import StockExtractor
 from stock_news_collector import StockNewsCollector
 
@@ -99,35 +99,52 @@ def main():
     print("🤖 CLOVA 분석 및 주식 종목 추출")
     print("=" * 60)
     
-    # 데이터 분석기 초기화
-    analyzer = DataAnalyzer()
+    # LlamaIndex RAG 데이터 분석기 초기화
+    analyzer = LlamaIndexDataAnalyzer()
     
-    print("🔍 CLOVA 분석 시작...")
+    print("🔍 LlamaIndex RAG 분석 시작...")
     analysis_success = analyzer.run_analysis()
     
     if analysis_success:
-        print("✅ CLOVA 분석 완료")
+        print("✅ LlamaIndex RAG 분석 완료")
         
-        # 주식 종목 추출 및 데이터 수집
-        print("\n📊 주식 종목 추출 및 데이터 수집 시작...")
+        # 주식 종목 추출
+        print("\n📊 주식 종목 추출 시작...")
         extractor = StockExtractor()
         extraction_success = extractor.run_extraction()
         
         if extraction_success:
-            print("✅ 주식 종목 추출 및 데이터 수집 완료")
+            print("✅ 주식 종목 추출 완료")
             
-            # 5. 개별 종목 뉴스 수집
+            # 5. 자동 주식 데이터 수집 (추출된 종목명 사용)
+            print("\n" + "=" * 60)
+            print("📈 자동 주식 데이터 수집")
+            print("=" * 60)
+            
+            # stock_extractor에서 추출된 종목명을 가져와서 자동 수집
+            extracted_stocks = extractor.get_extracted_stocks()
+            
+            if extracted_stocks:
+                from stock_data_collector import StockDataCollector
+                stock_collector = StockDataCollector()
+                auto_collection_success = stock_collector.run_auto_collection(extracted_stocks)
+                
+                if auto_collection_success:
+                    print("✅ 자동 주식 데이터 수집 완료")
+                else:
+                    print("❌ 자동 주식 데이터 수집 실패")
+            else:
+                print("❌ 추출된 종목명이 없어 자동 수집을 건너뜁니다.")
+            
+            # 6. 개별 종목 뉴스 수집
             print("\n" + "=" * 60)
             print("📰 개별 종목 뉴스 수집")
             print("=" * 60)
             
-            # 추출된 종목명들을 가져와서 뉴스 수집
-            # 실제로는 stock_extractor에서 추출된 종목명을 사용해야 함
-            # 임시로 테스트용 종목명 사용
-            extracted_stocks = ["미투온", "뉴로핏", "광명전기"]
-            
+            # 추출된 종목명이 있으면 사용, 없으면 테스트용 종목명 사용
+            news_stocks = extracted_stocks if extracted_stocks else ["미투온", "뉴로핏", "광명전기"]
             news_collector = StockNewsCollector()
-            news_success = news_collector.run_collection(extracted_stocks)
+            news_success = news_collector.run_collection(news_stocks)
             
             if news_success:
                 print("✅ 개별 종목 뉴스 수집 완료")
@@ -136,7 +153,7 @@ def main():
         else:
             print("❌ 주식 종목 추출 및 데이터 수집 실패")
     else:
-        print("❌ CLOVA 분석 실패")
+        print("❌ LlamaIndex RAG 분석 실패")
     
     print("\n🎉 통합 데이터 수집 및 분석 테스트 완료!")
 
