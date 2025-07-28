@@ -25,7 +25,7 @@ API_KEY = os.getenv("CLOVA_API_KEY", "")
 API_URL = "https://clovastudio.stream.ntruss.com/v3/chat-completions/HCX-005"
 
 # 📌 데이터 저장 경로
-DATA_DIR = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/Individual_Stock_Search/data")
+DATA_DIR = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data_1")
 
 # 📌 Function Calling 정의
 tools = [
@@ -341,13 +341,16 @@ def main():
     # StockDataCollector 인스턴스 생성
     collector = StockDataCollector()
     
-    while True:
+    # 테스트용 종목명들 (CLOVA가 추출한 종목들)
+    test_stocks = ["뉴로핏", "LG디스플레이", "현대공업"]
+    
+    print(f"🧪 테스트용 종목명들: {test_stocks}")
+    
+    for user_input in test_stocks:
         try:
-            user_input = input("\n📥 종목명 또는 종목코드를 입력하세요 (종료: quit): ").strip()
-            
-            if user_input.lower() in ['quit', 'exit', '종료']:
-                print("👋 시스템을 종료합니다.")
-                break
+            print(f"\n{'='*60}")
+            print(f"📊 테스트 종목: {user_input}")
+            print(f"{'='*60}")
             
             if not user_input:
                 continue
@@ -424,13 +427,12 @@ def main():
                 print("❌ 주식 데이터 수집이 필요하지 않은 요청입니다.")
                 print("💡 예시: '삼성전자 주가 데이터를 가져와줘', '005930 2024년 데이터', 'SK하이닉스 최근 6개월 주가'")
         
-        except KeyboardInterrupt:
-            print("\n\n👋 시스템을 종료합니다.")
-            break
         except Exception as e:
             print(f"\n❌ 오류가 발생했습니다: {e}")
             import traceback
             traceback.print_exc()
+    
+    print(f"\n🎉 모든 테스트 종목 처리 완료!")
 
 if __name__ == "__main__":
     # 바로 실행 (테스트 없이)

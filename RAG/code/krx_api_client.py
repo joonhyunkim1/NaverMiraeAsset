@@ -30,12 +30,14 @@ class KRXAPIClient:
         """이전 영업일을 계산합니다."""
         today = datetime.now()
         
-        # 주말인 경우 금요일로 조정
-        if today.weekday() == 5:  # 토요일
-            previous_day = today - timedelta(days=1)
+        # 월요일인 경우 전 주 금요일로 설정
+        if today.weekday() == 0:  # 월요일
+            previous_day = today - timedelta(days=3)
+        # 일요일인 경우 전 주 금요일로 설정
         elif today.weekday() == 6:  # 일요일
             previous_day = today - timedelta(days=2)
         else:
+            # 다른 평일인 경우 하루 전으로 설정
             previous_day = today - timedelta(days=1)
         
         return previous_day.strftime('%Y%m%d')
@@ -187,18 +189,23 @@ class KRXAPIClient:
             # timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = data_dir / f"krx_daily_trading_{target_date}.csv"
             
+            # 전체 종목 저장 (거래량이 있는 종목들 포함)
             if self.save_to_csv(df, str(filename)):
                 # 데이터 샘플 출력
-                print("\n📊 데이터 샘플:")
+                print("\n📊 데이터 샘플 (전체 종목):")
                 print(df.head())
                 
                 # 기본 통계 정보
                 print("\n📈 기본 통계 정보:")
-                print(f"총 종목 수: {len(df)}")
+                print(f"총 종목 수: {len(df)}개")
                 if 'TDD_CLSPRC' in df.columns:
                     print(f"평균 종가: {df['TDD_CLSPRC'].mean():.2f}")
                 if 'ACC_TRDVOL' in df.columns:
                     print(f"총 거래량: {df['ACC_TRDVOL'].sum():,}")
+                    
+                    # 거래량이 있는 종목 수 계산
+                    trading_stocks = df[df['ACC_TRDVOL'] > 0]
+                    print(f"거래량 있는 종목 수: {len(trading_stocks)}개")
                 
                 return str(filename)
             else:

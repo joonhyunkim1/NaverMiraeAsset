@@ -153,12 +153,18 @@ class NaverNewsClient:
         if filter_by_date:
             news_data = self._filter_news_by_date_with_target(news_data, days_back, target_count)
             print(f"📅 날짜 필터링 적용: 지난 {days_back}일 뉴스만 포함, 목표 {target_count}개")
+            # 최종적으로 3개로 제한
+            if len(news_data.get('items', [])) > 3:
+                news_data['items'] = news_data['items'][:3]
+                news_data['total'] = 3
+                print(f"📊 뉴스 개수 최종 조정: 3개로 제한")
         else:
-            # 필터링 없이도 목표 개수만큼만 유지
-            if len(news_data.get('items', [])) > target_count:
-                news_data['items'] = news_data['items'][:target_count]
-                news_data['total'] = target_count
-                print(f"📊 뉴스 개수 조정: {target_count}개로 제한")
+            # 필터링 없이도 목표 개수만큼만 유지 (최대 3개로 제한)
+            max_count = min(target_count, 3)
+            if len(news_data.get('items', [])) > max_count:
+                news_data['items'] = news_data['items'][:max_count]
+                news_data['total'] = max_count
+                print(f"📊 뉴스 개수 조정: {max_count}개로 제한")
         
         # JSON 파일로 저장
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
