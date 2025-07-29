@@ -72,8 +72,11 @@ class ClovaChatClient:
             if response.status == 200:
                 final_answer = ""
                 is_result_event = False
+                print("🔍 응답 스트림 처리 중...")
+                
                 for line in response:
                     line_str = line.decode('utf-8').strip()
+                    # print(f"📝 라인: {line_str}")  # 디버그 출력 주석처리
 
                     # event:result와 data:가 한 줄에 같이 있는 경우
                     if 'event:result' in line_str and 'data:' in line_str:
@@ -84,6 +87,7 @@ class ClovaChatClient:
                             data = json.loads(data_str)
                             if 'message' in data and 'content' in data['message']:
                                 final_answer = data['message']['content']
+                                print(f"✅ 최종 답변 추출: {final_answer[:100]}...")
                         except json.JSONDecodeError as e:
                             print(f"JSON 파싱 오류(한 줄): {e}")
                         break
@@ -91,10 +95,12 @@ class ClovaChatClient:
                     # event:result만 있는 줄이면 다음 data:에서 추출
                     if line_str.startswith('event:result'):
                         is_result_event = True
+                        print("📌 event:result 감지")
                         continue
 
                     # event:signal 또는 [DONE] 신호 감지 시 종료
                     if 'event:signal' in line_str or '"data":"[DONE]"' in line_str:
+                        print("🛑 스트림 종료 신호 감지")
                         break
 
                     # event:result 다음의 data: 라인에서 최종 답변 추출
@@ -104,11 +110,13 @@ class ClovaChatClient:
                             data = json.loads(data_str)
                             if 'message' in data and 'content' in data['message']:
                                 final_answer = data['message']['content']
+                                print(f"✅ 최종 답변 추출: {final_answer[:100]}...")
                         except json.JSONDecodeError as e:
                             print(f"JSON 파싱 오류(분리): {e}")
                         break
 
                 conn.close()
+                print(f"📊 최종 답변 길이: {len(final_answer)}")
                 return final_answer.strip()
             else:
                 print(f"Chat API 호출 실패: {response.status} {response.reason}")

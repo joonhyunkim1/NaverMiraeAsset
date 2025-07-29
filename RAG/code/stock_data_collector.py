@@ -25,7 +25,7 @@ API_KEY = os.getenv("CLOVA_API_KEY", "")
 API_URL = "https://clovastudio.stream.ntruss.com/v3/chat-completions/HCX-005"
 
 # 📌 데이터 저장 경로
-DATA_DIR = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/Individual_Stock_Search/data")
+DATA_DIR = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data_1")
 
 # 📌 Function Calling 정의
 tools = [
@@ -194,6 +194,105 @@ class StockDataCollector:
         except Exception as e:
             return {"error": f"데이터 조회 중 오류 발생: {str(e)}"}
     
+    def collect_stocks_data(self, stock_names: List[str], start_date: Optional[str] = None, 
+                           end_date: Optional[str] = None) -> List[Dict[str, Any]]:
+        """종목명 리스트를 받아서 각 종목의 데이터를 수집"""
+        collected_data = []
+        
+        print(f"📊 {len(stock_names)}개 종목 데이터 수집 시작...")
+        
+        for i, stock_name in enumerate(stock_names, 1):
+            try:
+                print(f"\n[{i}/{len(stock_names)}] {stock_name} 데이터 수집 중...")
+                
+                # 종목 데이터 수집
+                result = self.get_stock_data(stock_name, start_date, end_date)
+                
+                if "error" not in result:
+                    collected_data.append({
+                        "stock_name": stock_name,
+                        "data": result,
+                        "collection_time": datetime.now().isoformat()
+                    })
+                    print(f"✅ {stock_name} 데이터 수집 완료")
+                else:
+                    print(f"❌ {stock_name} 데이터 수집 실패: {result['error']}")
+                    
+            except Exception as e:
+                print(f"❌ {stock_name} 처리 중 오류: {e}")
+                continue
+        
+        print(f"\n📈 총 {len(collected_data)}개 종목 데이터 수집 완료")
+        return collected_data
+    
+    def save_collected_data(self, collected_data: List[Dict[str, Any]]) -> str:
+        """수집된 데이터를 JSON 파일로 저장"""
+        if not collected_data:
+            print("❌ 저장할 데이터가 없습니다.")
+            return ""
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"auto_collected_stocks_{timestamp}.json"
+        file_path = self.data_dir / filename
+        
+        try:
+            # 저장할 데이터 구성
+            save_data = {
+                "collection_time": datetime.now().isoformat(),
+                "total_stocks": len(collected_data),
+                "stocks": collected_data
+            }
+            
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(save_data, f, ensure_ascii=False, indent=2)
+            
+            print(f"✅ 수집된 데이터 저장 완료: {file_path}")
+            return str(file_path)
+            
+        except Exception as e:
+            print(f"❌ 데이터 저장 실패: {e}")
+            return ""
+    
+    def run_auto_collection(self, stock_names: List[str], start_date: Optional[str] = None, 
+                           end_date: Optional[str] = None) -> bool:
+        """자동 종목 데이터 수집 실행"""
+        print("=" * 60)
+        print("🚀 자동 주식 데이터 수집 시스템")
+        print("=" * 60)
+        
+        if not stock_names:
+            print("❌ 수집할 종목명이 없습니다.")
+            return False
+        
+        print(f"📊 수집 대상 종목: {stock_names}")
+        
+        # 종목 데이터 수집
+        collected_data = self.collect_stocks_data(stock_names, start_date, end_date)
+        
+        if not collected_data:
+            print("❌ 수집된 데이터가 없습니다.")
+            return False
+        
+        # 데이터 저장
+        saved_path = self.save_collected_data(collected_data)
+        
+        if saved_path:
+            print(f"\n🎉 자동 데이터 수집 완료!")
+            print(f"📁 결과 파일: {saved_path}")
+            print(f"📊 수집된 종목 수: {len(collected_data)}개")
+            
+            # 요약 정보 출력
+            for stock_data in collected_data:
+                stock_name = stock_data["stock_name"]
+                if "data" in stock_data and "summary" in stock_data["data"]:
+                    summary = stock_data["data"]["summary"]
+                    print(f"  📈 {stock_name}: {summary.get('total_rows', 0)}개 데이터")
+            
+            return True
+        
+        print("\n❌ 데이터 저장 실패")
+        return False
+    
     def _preprocess_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """데이터 전처리"""
         # 날짜 인덱스를 컬럼으로 변환
@@ -341,13 +440,16 @@ def main():
     # StockDataCollector 인스턴스 생성
     collector = StockDataCollector()
     
-    while True:
+    # 테스트용 종목명들 (CLOVA가 추출한 종목들)
+    test_stocks = ["뉴로핏", "LG디스플레이", "현대공업"]
+    
+    print(f"🧪 테스트용 종목명들: {test_stocks}")
+    
+    for user_input in test_stocks:
         try:
-            user_input = input("\n📥 종목명 또는 종목코드를 입력하세요 (종료: quit): ").strip()
-            
-            if user_input.lower() in ['quit', 'exit', '종료']:
-                print("👋 시스템을 종료합니다.")
-                break
+            print(f"\n{'='*60}")
+            print(f"📊 테스트 종목: {user_input}")
+            print(f"{'='*60}")
             
             if not user_input:
                 continue
@@ -424,13 +526,12 @@ def main():
                 print("❌ 주식 데이터 수집이 필요하지 않은 요청입니다.")
                 print("💡 예시: '삼성전자 주가 데이터를 가져와줘', '005930 2024년 데이터', 'SK하이닉스 최근 6개월 주가'")
         
-        except KeyboardInterrupt:
-            print("\n\n👋 시스템을 종료합니다.")
-            break
         except Exception as e:
             print(f"\n❌ 오류가 발생했습니다: {e}")
             import traceback
             traceback.print_exc()
+    
+    print(f"\n🎉 모든 테스트 종목 처리 완료!")
 
 if __name__ == "__main__":
     # 바로 실행 (테스트 없이)

@@ -147,18 +147,97 @@ class LlamaIndexRAGSystem:
                 
         return documents
     
+    def _dataframe_to_text(self, df: pd.DataFrame, filename: str) -> str:
+        """DataFrame을 텍스트로 변환"""
+        text_parts = []
+        
+        # 파일명 정보
+        text_parts.append(f"파일명: {filename}")
+        text_parts.append(f"총 {len(df)}행, {len(df.columns)}컬럼")
+        text_parts.append("")
+        
+        # KRX 데이터인 경우 특별 처리
+        if 'ISU_ABBRV' in df.columns and 'TDD_CLSPRC' in df.columns:
+            text_parts.append("=== KRX 일일거래정보 (70% 기준 필터링) ===")
+            text_parts.append("")
+            
+            # 전체 데이터에서 거래대금 하위 70%와 등락률 하위 70%에서 겹치는 주식 제외
+            df_processed = df.copy()
+            
+            # FLUC_RT 컬럼을 등락률로 사용
+            df_processed['등락률'] = df_processed['FLUC_RT']
+            df_processed['등락률_절대값'] = df_processed['등락률'].abs()
+            
+            print(f"📊 전체 데이터: {len(df_processed)}개 종목")
+            
+            # 거래대금 기준 하위 70% 찾기
+            df_trading_value_sorted = df_processed.sort_values('ACC_TRDVAL', ascending=True)
+            bottom_70_percent_trading = int(len(df_trading_value_sorted) * 0.7)
+            low_trading_stocks = set(df_trading_value_sorted.head(bottom_70_percent_trading)['ISU_ABBRV'].tolist())
+            
+            # 등락률 기준 하위 70% 찾기 (절대값 기준)
+            df_change_rate_sorted = df_processed.sort_values('등락률_절대값', ascending=True)
+            bottom_70_percent_change = int(len(df_change_rate_sorted) * 0.7)
+            low_change_stocks = set(df_change_rate_sorted.head(bottom_70_percent_change)['ISU_ABBRV'].tolist())
+            
+            # 겹치는 주식들 찾기
+            overlapping_stocks = low_trading_stocks.intersection(low_change_stocks)
+            
+            print(f"📊 거래대금 하위 70%: {len(low_trading_stocks)}개 종목")
+            print(f"📊 등락률 하위 70%: {len(low_change_stocks)}개 종목")
+            print(f"📊 겹치는 종목: {len(overlapping_stocks)}개")
+            
+            # 겹치는 주식들을 제외한 최종 필터링
+            df_final_filtered = df_processed[~df_processed['ISU_ABBRV'].isin(overlapping_stocks)]
+            
+            print(f"📊 최종 필터링 결과: {len(df_processed)}개 → {len(df_final_filtered)}개")
+            
+            # 각 종목별로 읽기 쉬운 형태로 변환
+            for idx, row in df_final_filtered.iterrows():
+                stock_name = row.get('ISU_ABBRV', '')  # 실제 컬럼명
+                stock_code = row.get('ISU_CD', '')     # 실제 컬럼명
+                
+                if stock_name and stock_code:
+                    # 가격 정보
+                    open_price = row.get('TDD_OPNPRC', 0)
+                    high_price = row.get('TDD_HGPRC', 0)
+                    low_price = row.get('TDD_LWPRC', 0)
+                    close_price = row.get('TDD_CLSPRC', 0)
+                    trading_value = row.get('ACC_TRDVAL', 0)
+                    change_rate = row.get('등락률', 0.0)
+                    
+                    # 종목 정보를 읽기 쉬운 형태로 구성
+                    stock_info = f"종목명: {stock_name}, 시가: {open_price}, 고가: {high_price}, 저가: {low_price}, 종가: {close_price}, 거래대금: {trading_value}, 등락률: {change_rate:.2f}"
+                    text_parts.append(stock_info)
+            
+            text_parts.append("")
+            text_parts.append(f"총 {len(df_final_filtered)}개 종목의 거래 정보 (70% 기준 필터링)")
+        else:
+            # 일반 CSV 파일 처리 (기존 방식)
+            text_parts.append("컬럼명:")
+            for col in df.columns:
+                text_parts.append(f"  - {col}")
+            text_parts.append("")
+            
+            # 데이터 샘플 (처음 10행)
+            text_parts.append("데이터 샘플 (처음 10행):")
+            sample_df = df.head(10)
+            text_parts.append(sample_df.to_string(index=False))
+        
+        return "\n".join(text_parts)
+    
     def _news_articles_to_documents(self) -> List[Document]:
-        """뉴스 본문 JSON 파일들을 LlamaIndex Document로 변환"""
+        """뉴스 기사들을 LlamaIndex Document로 변환"""
         documents = []
         
-        # finance_articles_*.json 파일들 찾기
-        news_files = list(self.data_dir.glob("finance_articles_*.json"))
+        # naver_news_*.json 파일들 찾기
+        news_files = list(self.data_dir.glob("naver_news_*.json"))
         
         if not news_files:
-            print(f"뉴스 본문 JSON 파일을 찾을 수 없습니다: {self.data_dir}")
+            print(f"뉴스 JSON 파일을 찾을 수 없습니다: {self.data_dir}")
             return documents
             
-        print(f"발견된 뉴스 본문 파일: {len(news_files)}개")
+        print(f"발견된 뉴스 파일: {len(news_files)}개")
         
         for news_file in news_files:
             try:
@@ -168,28 +247,32 @@ class LlamaIndexRAGSystem:
                 with open(news_file, 'r', encoding='utf-8') as f:
                     news_data = json.load(f)
                 
-                # 각 기사를 Document로 변환
-                if 'articles' in news_data:
-                    for i, article in enumerate(news_data['articles']):
-                        # 기사 내용을 텍스트로 변환
-                        text_content = self._article_to_text(article, i+1)
-                        
-                        # Document 생성
-                        doc = Document(
-                            text=text_content,
-                            metadata={
-                                "source": str(news_file),
-                                "filename": news_file.name,
-                                "type": "news_article",
-                                "article_index": i+1,
-                                "url": article.get('url', ''),
-                                "content_length": article.get('length', 0)
-                            }
-                        )
-                        
-                        documents.append(doc)
+                # 뉴스 기사 목록 추출
+                articles = []
+                if 'items' in news_data:
+                    articles = news_data['items']
+                elif 'articles' in news_data:
+                    articles = news_data['articles']
+                
+                print(f"  - {len(articles)}개 뉴스 기사 처리")
+                
+                # 각 뉴스 기사를 Document로 변환
+                for i, article in enumerate(articles):
+                    text_content = self._article_to_text(article, i+1)
                     
-                    print(f"  - {news_file.name}: {len(news_data['articles'])}개 기사")
+                    doc = Document(
+                        text=text_content,
+                        metadata={
+                            "source": str(news_file),
+                            "filename": news_file.name,
+                            "type": "news_article",
+                            "article_index": i+1,
+                            "title": article.get('title', ''),
+                            "url": article.get('link', ''),
+                            "publish_date": article.get('pubDate', '')
+                        }
+                    )
+                    documents.append(doc)
                 
             except Exception as e:
                 print(f"오류: {news_file} 처리 실패 - {e}")
@@ -197,48 +280,30 @@ class LlamaIndexRAGSystem:
         return documents
     
     def _article_to_text(self, article: Dict, index: int) -> str:
-        """기사 데이터를 텍스트로 변환"""
+        """뉴스 기사를 텍스트로 변환"""
         text_parts = []
         
-        # 기사 정보
-        text_parts.append(f"기사 {index}")
-        text_parts.append(f"URL: {article.get('url', 'N/A')}")
-        text_parts.append(f"본문 길이: {article.get('length', 0)}자")
-        text_parts.append("")
+        # 기사 제목
+        title = article.get('title', '')
+        if title:
+            text_parts.append(f"제목: {title}")
         
-        # 기사 본문
-        content = article.get('content', '')
-        if content:
-            text_parts.append("본문 내용:")
-            text_parts.append(content)
+        # 기사 내용 (설명)
+        description = article.get('description', '')
+        if description:
+            # HTML 태그 제거
+            import re
+            clean_description = re.sub(r'<[^>]+>', '', description)
+            text_parts.append(f"내용: {clean_description}")
         
-        return "\n".join(text_parts)
-        
-    def _dataframe_to_text(self, df: pd.DataFrame, filename: str) -> str:
-        """DataFrame을 텍스트로 변환"""
-        text_parts = []
-        
-        # 파일 정보
-        text_parts.append(f"파일명: {filename}")
-        text_parts.append(f"총 행 수: {len(df)}")
-        text_parts.append(f"총 컬럼 수: {len(df.columns)}")
-        text_parts.append(f"컬럼 목록: {', '.join(df.columns)}")
-        text_parts.append("")
-        
-        # 데이터 내용 (처음 1000행만 처리)
-        max_rows = min(1000, len(df))
-        text_parts.append(f"데이터 내용 (처음 {max_rows}행):")
-        
-        for idx, row in df.head(max_rows).iterrows():
-            row_parts = []
-            for col in df.columns:
-                if pd.notna(row[col]) and str(row[col]).strip():
-                    row_parts.append(f"{col}: {row[col]}")
-            
-            if row_parts:
-                text_parts.append(f"행 {idx+1}: {' | '.join(row_parts)}")
+        # 발행일
+        pub_date = article.get('pubDate', '')
+        if pub_date:
+            text_parts.append(f"발행일: {pub_date}")
         
         return "\n".join(text_parts)
+    
+
         
     def build_index(self, rebuild: bool = False) -> bool:
         """벡터 인덱스 구축"""
@@ -268,16 +333,31 @@ class LlamaIndexRAGSystem:
             
             print(f"총 {len(documents)}개의 문서를 처리합니다.")
             
-            # CLOVA 세그멘테이션을 사용하여 문서를 청킹
-            print("CLOVA 세그멘테이션으로 문서 청킹 중...")
+            # 문서 청킹
+            print("문서 청킹 중...")
             chunked_documents = []
             
             for doc in documents:
-                # CLOVA 세그멘테이션으로 텍스트 청킹
-                chunks = self.segmentation_client.segment_text(
-                    doc.text, 
-                    max_length=512
-                )
+                # 문서 크기 로깅
+                print(f"📄 문서 처리 중: {doc.metadata.get('filename', 'unknown')} ({len(doc.text):,}자)")
+                
+                # 문서 타입에 따른 세그멘테이션 설정
+                doc_type = doc.metadata.get('type', 'unknown')
+                
+                if doc_type == 'csv':
+                    # KRX CSV 데이터: 최적화된 설정 사용
+                    print(f"  🔧 CSV 데이터 - 최적화된 세그멘테이션 적용")
+                    chunks = self.segmentation_client.segment_text(
+                        doc.text, 
+                        max_length=2048  # 큰 청크 크기
+                    )
+                else:
+                    # 뉴스 데이터: 원래 설정 사용
+                    print(f"  📰 뉴스 데이터 - 기본 세그멘테이션 적용")
+                    chunks = self.segmentation_client.segment_text(
+                        doc.text, 
+                        max_length=512  # 작은 청크 크기 (뉴스에 적합)
+                    )
                 
                 if chunks:
                     # 각 청크를 별도의 Document로 생성
@@ -298,6 +378,12 @@ class LlamaIndexRAGSystem:
                     chunked_documents.append(doc)
             
             print(f"총 {len(chunked_documents)}개의 청크로 분할 완료")
+            
+            # 임베딩 진행상황 추적을 위한 총 요청 수 설정
+            if hasattr(self.embed_model, '_embedding_executor'):
+                self.embed_model._embedding_executor._total_requests = len(chunked_documents)
+                self.embed_model._embedding_executor._completed_requests = 0
+                print(f"📊 임베딩 진행상황 추적 설정: 총 {len(chunked_documents)}개 청크")
             
             # 벡터 인덱스 생성 (청킹된 문서들 사용)
             print("벡터 인덱스 생성 중...")
@@ -497,3 +583,5 @@ class LlamaIndexRAGSystem:
         
         print(f"\n대화 내용 저장 완료: {conversation_path}")
         print(f"총 {len(conversation)}개의 대화가 저장되었습니다.") 
+
+ 

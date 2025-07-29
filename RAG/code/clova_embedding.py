@@ -18,6 +18,8 @@ class EmbeddingExecutor:
         self._host = host
         self._api_key = api_key
         self._request_id = request_id
+        self._total_requests = 0
+        self._completed_requests = 0
     
     def _send_request(self, completion_request):
         headers = {
@@ -34,8 +36,13 @@ class EmbeddingExecutor:
         return result
     
     def execute(self, completion_request):
+        # 진행상황 업데이트
+        self._completed_requests += 1
+        progress = (self._completed_requests / self._total_requests * 100) if self._total_requests > 0 else 0
+        
         # API 요청 제한을 위한 지연
-        time.sleep(0.1)  # 100ms 지연
+        print(f"⏳ 30초 지연 중... ({self._completed_requests}/{self._total_requests} - {progress:.1f}%)")
+        time.sleep(30)  # 30초 지연 (rate limit 방지)
         
         res = self._send_request(completion_request)
         if res['status']['code'] == '20000':

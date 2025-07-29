@@ -43,14 +43,14 @@ class ClovaSegmentationClient:
                 'X-NCP-CLOVASTUDIO-REQUEST-ID': self.request_id
             }
             
-            # CLOVA 세그멘테이션 API 요청 데이터 (현재 형식)
+            # CLOVA 세그멘테이션 API 요청 데이터 (모델이 최적값 결정)
             body = {
                 "postProcessMaxSize": max_length,
-                "alpha": 0.0,
-                "segCnt": -1,
-                "postProcessMinSize": max_length // 2,  # 최소 크기는 최대 크기의 절반
+                "alpha": -100,  # 모델이 최적값으로 결정
+                "segCnt": -1,   # 모델이 최적값으로 결정
+                "postProcessMinSize": max_length // 4,  # 최소 크기는 최대 크기의 1/4
                 "text": text,
-                "postProcess": False
+                "postProcess": True  # 후처리 활성화
             }
             
             conn = http.client.HTTPSConnection("clovastudio.stream.ntruss.com")
