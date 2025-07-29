@@ -22,15 +22,15 @@ def main():
     print("=" * 60)
     
     # ===== 뉴스 검색 파라미터 설정 =====
-    # 테스트용: 뉴스 3개 (관련도순), KRX 데이터 상위 10개
+    # 최신순으로 30개 뉴스 수집
     NEWS_CONFIG = {
         "query": "국내 주식 주가",  # 검색어
         "display": 100,           # 가져올 뉴스 개수 (최대 100)
         "start": 1,               # 검색 시작 위치
-        "sort": "sim",            # 정렬 방법 ("sim": 관련도순, "date": 날짜순)
+        "sort": "date",           # 정렬 방법 ("sim": 관련도순, "date": 날짜순)
         "filter_by_date": True,   # 날짜 필터링 사용 여부
         "days_back": 1,           # 지난 몇 일 뉴스를 가져올지 (1 = 지난 1일)
-        "target_count": 3         # 필터링 후 목표 뉴스 개수 (테스트용: 3개)
+        "target_count": 30        # 필터링 후 목표 뉴스 개수 (최신순 30개)
     }
     
     print(f"📰 뉴스 검색 설정: {NEWS_CONFIG}")

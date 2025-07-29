@@ -27,7 +27,7 @@ extraction_tools = [
         "type": "function",
         "function": {
             "name": "extract_stock_names",
-            "description": "분석 결과에서 이슈가 된 주식 종목명들을 추출합니다. 정확한 KRX 종목명으로 추출해주세요.",
+            "description": "분석 결과에서 이슈가 된 주식 종목명들을 추출합니다. 종목명만 추출하고 종목코드는 포함하지 마세요. 예: '삼성전자', 'LG화학', '현대자동차'",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -36,7 +36,7 @@ extraction_tools = [
                         "items": {
                             "type": "string"
                         },
-                        "description": "분석 결과에서 추출된 주식 종목명들의 배열입니다. 정확한 KRX 종목명으로 추출해주세요."
+                        "description": "분석 결과에서 추출된 주식 종목명들의 배열입니다. 종목명만 포함하고 종목코드나 괄호는 포함하지 마세요. 예: ['삼성전자', 'LG화학', '현대자동차']"
                     }
                 },
                 "required": ["extracted_stocks"]

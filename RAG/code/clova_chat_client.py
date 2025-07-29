@@ -76,7 +76,7 @@ class ClovaChatClient:
                 
                 for line in response:
                     line_str = line.decode('utf-8').strip()
-                    print(f"📝 라인: {line_str}")
+                    # print(f"📝 라인: {line_str}")  # 디버그 출력 주석처리
 
                     # event:result와 data:가 한 줄에 같이 있는 경우
                     if 'event:result' in line_str and 'data:' in line_str:
