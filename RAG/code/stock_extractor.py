@@ -66,11 +66,11 @@ class StockExtractor:
     def _load_stock_list(self):
         """KRX 종목 목록 로드"""
         try:
-            import finance_datareader as fdr
+            import FinanceDataReader as fdr
             self.stock_df = fdr.StockListing('KRX')
             print(f"✅ KRX 종목 목록 로드 완료: {len(self.stock_df)}개 종목")
         except ImportError:
-            print("❌ finance_datareader 모듈이 설치되지 않았습니다.")
+            print("❌ FinanceDataReader 모듈이 설치되지 않았습니다.")
             print("💡 pip install finance-datareader 명령으로 설치하세요.")
             self.stock_df = pd.DataFrame()
         except Exception as e:
@@ -181,8 +181,8 @@ class StockExtractor:
     def load_clova_analysis(self) -> Optional[Dict]:
         """CLOVA 분석 결과 로드"""
         try:
-            # 가장 최근 분석 결과 파일 찾기 (LlamaIndex RAG 분석 결과 포함)
-            analysis_files = list(self.data_dir.glob("*analysis_*.json"))
+            # 가장 최근 분석 결과 파일 찾기 (data_2 폴더에서)
+            analysis_files = list(Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data_2").glob("*analysis_*.json"))
             if not analysis_files:
                 print("❌ CLOVA 분석 결과 파일을 찾을 수 없습니다.")
                 return None
@@ -378,7 +378,7 @@ class StockExtractor:
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"extracted_stocks_{timestamp}.json"
-        file_path = self.output_dir / filename
+        file_path = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data_2") / filename
         
         try:
             # 저장할 데이터 구성

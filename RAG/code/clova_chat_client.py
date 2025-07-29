@@ -151,6 +151,49 @@ class ClovaChatClient:
         
         return self.create_chat_completion(messages)
     
+    def create_vector_based_response(self, query: str, embedding_vectors: List[List[float]], vector_metadata: List[Dict[str, Any]]) -> Optional[str]:
+        """임베딩 벡터를 직접 사용한 응답 생성"""
+        # 시스템 메시지
+        system_message = """당신은 주식 시장 데이터에 대한 질문에 답변하는 전문가입니다. 
+제공된 임베딩 벡터 정보를 바탕으로 금융 보고서 형태의 답변을 해주세요.
+임베딩 벡터는 1024차원의 벡터로, 각 벡터는 특정 주식 데이터나 뉴스 정보를 나타냅니다.
+답변할 때는 한국어로 답변하고, 가능한 한 간결하고 명확하게 설명해주세요.
+특히 주식 데이터를 답변할 때는 모든 관련 정보를 포함하여 완전한 정보를 제공해주세요.
+답변은 줄글로 작성해주세요."""
+
+        # 벡터 정보 구성
+        vector_info = "=== 임베딩 벡터 정보 ===\n"
+        vector_info += f"총 벡터 수: {len(embedding_vectors)}개\n"
+        vector_info += f"벡터 차원: {len(embedding_vectors[0]) if embedding_vectors else 0}차원\n"
+        
+        # 벡터 메타데이터 정보
+        if vector_metadata:
+            vector_info += "\n📊 벡터 메타데이터:\n"
+            for i, metadata in enumerate(vector_metadata[:5], 1):  # 상위 5개만 표시
+                filename = metadata.get('filename', 'Unknown')
+                vector_type = metadata.get('type', 'Unknown')
+                vector_info += f"  {i}. {filename} ({vector_type})\n"
+        
+        # 벡터 통계 정보
+        if embedding_vectors:
+            import numpy as np
+            vectors_array = np.array(embedding_vectors)
+            vector_info += f"\n📈 벡터 통계:\n"
+            vector_info += f"  - 평균 벡터 크기: {np.mean(np.linalg.norm(vectors_array, axis=1)):.4f}\n"
+            vector_info += f"  - 벡터 크기 표준편차: {np.std(np.linalg.norm(vectors_array, axis=1)):.4f}\n"
+            vector_info += f"  - 최대 벡터 크기: {np.max(np.linalg.norm(vectors_array, axis=1)):.4f}\n"
+            vector_info += f"  - 최소 벡터 크기: {np.min(np.linalg.norm(vectors_array, axis=1)):.4f}\n"
+        
+        # 사용자 메시지 구성
+        user_message = f"{vector_info}\n=== 질문 ===\n{query}\n\n위 임베딩 벡터 정보를 바탕으로 답변해주세요."
+        
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+        
+        return self.create_chat_completion(messages)
+    
     def get_api_info(self) -> Dict[str, Any]:
         """API 정보를 반환합니다."""
         return {
