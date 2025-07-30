@@ -140,8 +140,6 @@ class HybridVectorManager:
                             "type": "csv",
                             "chunk_index": i,
                             "total_chunks": len(chunks),
-                            "rows": len(df),
-                            "columns": list(df.columns),
                             "text_content": chunk,  # 실제 텍스트 내용 추가
                             "text_length": len(chunk),
                             "created_at": datetime.now().isoformat()

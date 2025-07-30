@@ -61,7 +61,7 @@ class NewsContentExtractor:
                 # 간단한 텍스트 정제 (HTML 태그 제거 등)
                 content = self._clean_content(content)
                 
-                if content and len(content) > 100:  # 최소 100자 이상
+                if content and len(content) > 20:  # 최소 20자 이상으로 완화
                     return {
                         'url': url,
                         'content': content,
@@ -79,18 +79,31 @@ class NewsContentExtractor:
             return None
     
     def _clean_content(self, content: str) -> str:
-        """텍스트 정제"""
-        # 기본적인 정제 작업
+        """텍스트 정제 - 내용이 잘리지 않도록 개선"""
+        if not content:
+            return ""
+        
+        # HTML 태그 제거
+        import re
+        content = re.sub(r'<[^>]+>', '', content)
+        
+        # 기본적인 정제 작업 (너무 짧은 줄 제거 기준 완화)
         lines = content.split('\n')
         cleaned_lines = []
         
         for line in lines:
             line = line.strip()
-            # 빈 줄이나 너무 짧은 줄 제거
-            if line and len(line) > 10:
+            # 빈 줄 제거, 너무 짧은 줄 제거 기준을 5자로 완화
+            if line and len(line) > 5:
                 cleaned_lines.append(line)
         
-        return '\n'.join(cleaned_lines)
+        result = '\n'.join(cleaned_lines)
+        
+        # 최소 길이 확인 (20자 이상으로 완화)
+        if len(result) < 20:
+            return ""
+        
+        return result
     
     def process_news_json(self, filename: str) -> List[Dict]:
         """뉴스 JSON 파일을 처리하여 본문 추출"""

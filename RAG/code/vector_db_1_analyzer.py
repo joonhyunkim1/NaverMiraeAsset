@@ -19,10 +19,11 @@ env_path = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/code/.env")
 load_dotenv(env_path)
 
 class CompletionExecutor:
-    def __init__(self, host, api_key, request_id):
+    def __init__(self, host, api_key, request_id, model_endpoint=None):
         self._host = host
         self._api_key = api_key
         self._request_id = request_id
+        self._model_endpoint = model_endpoint or "/v3/tasks/yl1fvofj/chat-completions"
 
     def _send_request(self, completion_request):
         headers = {
@@ -33,13 +34,13 @@ class CompletionExecutor:
 
         print(f"🔍 CLOVA API 요청 정보:")
         print(f"   호스트: {self._host}")
-        print(f"   엔드포인트: /v3/chat-completions/HCX-005")
+        print(f"   엔드포인트: {self._model_endpoint}")
         print(f"   Request ID: {self._request_id}")
         print(f"   API 키: {self._api_key[:20]}...")
         print(f"   요청 데이터: {completion_request}")
 
         conn = http.client.HTTPSConnection(self._host)
-        conn.request('POST', '/v3/chat-completions/HCX-005', json.dumps(completion_request), headers)
+        conn.request('POST', self._model_endpoint, json.dumps(completion_request), headers)
         response = conn.getresponse()
         
         print(f"📡 CLOVA API 응답:")
@@ -55,10 +56,14 @@ class CompletionExecutor:
     def execute(self, completion_request):
         res = self._send_request(completion_request)
         if res['status']['code'] == '20000':
-            # 새로운 응답 형식에 맞게 수정
+            # 새로운 모델은 message.content 형식으로 응답
             if 'result' in res and 'message' in res['result'] and 'content' in res['result']['message']:
                 return res['result']['message']['content']
+            # 기존 text 형식도 지원
+            elif 'result' in res and 'text' in res['result']:
+                return res['result']['text']
             else:
+                print(f"❌ 예상치 못한 응답 형식: {res}")
                 return 'Error'
         else:
             return 'Error'
@@ -69,15 +74,17 @@ class VectorDB1Analyzer:
     def __init__(self):
         self.api_base_url = "http://localhost:8001"  # Vector DB1 FAISS API 서버
         
-        # CLOVA API 설정
-        self.api_key = os.getenv("CLOVA_API_KEY", "")
-        self.request_id = "7a7bcaa73904445ea4c406c07c263bea"  # 사용자가 제공한 고정 request_id
+        # 새로운 CLOVA API 설정
+        self.api_key = os.getenv("NEW_CLOVA_API_KEY", "")
+        self.request_id = os.getenv("NEW_CLOVA_REQUEST_ID", "4997d0ab4e434139bd982084de885077")
+        self.model_endpoint = os.getenv("NEW_CLOVA_MODEL_ENDPOINT", "/v3/tasks/yl1fvofj/chat-completions")
         
         # CLOVA 클라이언트 초기화
         self.clova_client = CompletionExecutor(
             host='clovastudio.stream.ntruss.com',
             api_key=f'Bearer {self.api_key}',
-            request_id=self.request_id
+            request_id=self.request_id,
+            model_endpoint=self.model_endpoint
         )
         
         print("🔧 VectorDB1Analyzer 초기화 완료")
@@ -152,7 +159,7 @@ class VectorDB1Analyzer:
         
         print("🤖 CLOVA 모델에게 보고서 요청 중...")
         
-        # CLOVA API 요청 (기존 clova_chat_client.py 형식 사용)
+        # 새로운 CLOVA 모델 형식 사용 (messages 형식)
         request_data = {
             "messages": [
                 {
@@ -161,7 +168,7 @@ class VectorDB1Analyzer:
                 }
             ],
             "maxTokens": 4000,  # 4000자 보고서
-            "temperature": 0.7,
+            "temperature": 0.5,
             "topP": 0.8,
             "topK": 0,
             "repetitionPenalty": 1.1,
@@ -187,17 +194,17 @@ class VectorDB1Analyzer:
     def _create_analysis_prompt(self, text_contents: List[str]) -> str:
         """분석용 프롬프트 생성"""
         prompt = f"""
-당신은 주식 시장 분석 전문가입니다. 제공된 데이터를 바탕으로 오늘 하루 주목해야 할 종목들을 정리한 보고서를 작성해주세요.
+당신은 주식 시장 분석 전문가입니다. 제공된 데이터를 바탕으로 요구사항에 따라 오늘 하루 주목해야 할 종목들을 정리한 보고서를 작성해주세요.
 
 다음은 분석할 데이터입니다:
 
-{chr(10).join(text_contents[:10])}  # 처음 10개 텍스트만 사용
+{chr(20).join(text_contents[:20])}  # 처음 10개 텍스트만 사용
 
 보고서 작성 요구사항:
 1. 총 글자수: 4000자 정도
 2. 구조:
-   - 서론: 오늘의 시장 상황 요약
-   - 본론: 주목해야 할 종목별 상세 분석 (3-5개 종목)
+   - 서론: 오늘 주목해야할 종목명 3가지
+   - 본론: 주목해야 할 종목별 상세 분석 (3개 종목)
    - 결론: 투자 전략 및 주의사항
 
 3. 각 종목별 분석 내용:
@@ -254,10 +261,11 @@ class VectorDB1Analyzer:
         if not report_file:
             return False
         
-                        print("\n" + "=" * 60)
-                print("📊 분석 결과 전체 보고서")
-                print("=" * 60)
-                print(report)
+        # 4. 결과 출력
+        print("\n" + "=" * 60)
+        print("📊 분석 결과 전체 보고서")
+        print("=" * 60)
+        print(report)
         
         return True
 

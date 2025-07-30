@@ -45,10 +45,10 @@ class ClovaSegmentationClient:
             
             # CLOVA 세그멘테이션 API 요청 데이터 (모델이 최적값 결정)
             body = {
-                "postProcessMaxSize": max_length,
+                "postProcessMaxSize": max_length * 4,  # 더 큰 최대 크기 (4배)
                 "alpha": -100,  # 모델이 최적값으로 결정
                 "segCnt": -1,   # 모델이 최적값으로 결정
-                "postProcessMinSize": max_length // 4,  # 최소 크기는 최대 크기의 1/4
+                "postProcessMinSize": max_length // 2,  # 최소 크기를 더 크게 설정
                 "text": text,
                 "postProcess": True  # 후처리 활성화
             }
@@ -64,7 +64,24 @@ class ClovaSegmentationClient:
                 topic_segments = result['result'].get('topicSeg', [])
                 if topic_segments:
                     # 각 세그먼트를 하나의 텍스트로 결합
-                    return [' '.join(segment) for segment in topic_segments if segment]
+                    segments = [' '.join(segment) for segment in topic_segments if segment]
+                    
+                    # 디버깅: 각 세그먼트의 길이와 내용 확인
+                    print(f"    📝 CLOVA 세그멘테이션 완료: {len(segments)}개 청크")
+                    print(f"    📊 원본 텍스트 길이: {len(text)}자")
+                    total_segment_length = sum(len(segment) for segment in segments)
+                    print(f"    📊 세그먼트 총 길이: {total_segment_length}자")
+                    
+                    if total_segment_length < len(text):
+                        print(f"    ⚠️ 세그멘테이션에서 데이터 손실 발생!")
+                        print(f"    📉 손실된 텍스트: {len(text) - total_segment_length}자")
+                        print(f"    📄 원본 텍스트 미리보기: {text[:200]}...")
+                    
+                    for i, segment in enumerate(segments):
+                        print(f"      📄 세그먼트 {i+1} 길이: {len(segment)}자")
+                        print(f"      📄 세그먼트 {i+1} 미리보기: {segment[:100]}...")
+                    
+                    return segments
                 else:
                     print(f"topicSeg가 없습니다: {result}")
                     return None
