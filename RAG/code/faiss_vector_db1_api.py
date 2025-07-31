@@ -31,7 +31,9 @@ class VectorDB1Manager:
     """Vector DB1 관리자"""
     
     def __init__(self):
-        self.vector_dir = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/vector_db_1")
+        # 현재 스크립트 위치를 기준으로 상대 경로 설정
+        current_dir = Path(__file__).parent
+        self.vector_dir = current_dir.parent / "vector_db_1"
         self.vectors = []
         self.metadata = []
         self.index = None

@@ -23,9 +23,14 @@ from news_content_extractor import NewsContentExtractor
 class HybridVectorManager:
     """하이브리드 벡터 관리 시스템 (LlamaIndex + CLOVA)"""
     
-    def __init__(self, data_dir: str = "/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data"):
-        self.data_dir = Path(data_dir)
-        self.vector_dir = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/vector_db")
+    def __init__(self, data_dir: str = None):
+        # 현재 스크립트 위치를 기준으로 상대 경로 설정
+        current_dir = Path(__file__).parent
+        if data_dir is None:
+            self.data_dir = current_dir.parent / "data"
+        else:
+            self.data_dir = Path(data_dir)
+        self.vector_dir = current_dir.parent / "vector_db"
         self.vector_dir.mkdir(exist_ok=True)
         
         # CLOVA 클라이언트 초기화

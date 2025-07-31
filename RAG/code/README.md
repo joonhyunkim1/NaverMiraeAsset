@@ -1,107 +1,146 @@
-# LlamaIndex 기반 RAG 시스템
+# 주식 시장 분석 RAG 시스템
 
-이 프로젝트는 LlamaIndex를 사용하여 구현된 RAG(Retrieval Augmented Generation) 시스템입니다. CLOVA X API를 사용하여 임베딩을 생성하고, HyperCLOVA X를 사용하여 답변을 생성합니다.
+AI 기반 주식 시장 분석 및 보고서 생성 시스템입니다.
 
-## 🚀 주요 특징
+## 주요 기능
 
-- **LlamaIndex 프레임워크**: LangChain 대신 LlamaIndex를 사용하여 RAG 구현
-- **CLOVA X Embedding API**: NAVER Cloud Platform의 CLOVA X API를 사용한 임베딩 생성
-- **HyperCLOVA X**: NAVER의 최신 LLM을 사용한 답변 생성
-- **CSV 데이터 지원**: 로컬 CSV 파일을 지식 베이스로 활용
-- **대화형 인터페이스**: 대화형 채팅 모드 지원
+- **데이터 수집**: KRX 일일거래정보, 네이버 뉴스 수집
+- **벡터 검색**: FAISS를 이용한 유사도 기반 검색
+- **AI 분석**: CLOVA API를 이용한 주식 시장 분석
+- **보고서 생성**: 일일 주식 시장 종합 분석 보고서
+- **이메일 발송**: Naver Cloud Outbound Mailer를 이용한 자동 이메일 발송
 
-## 📋 요구사항
+## 환경 설정
 
-### API 키
-1. **CLOVA X API 키**: 공통 API 키
-2. **CLOVA X Embedding Request ID**: 임베딩 API 전용 Request ID
-3. **CLOVA X Chat Request ID**: Chat Completion API 전용 Request ID
+### 1. 기본 환경 변수
 
-### 데이터
-- `/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data` 디렉토리에 CSV 파일들
+`.env` 파일에 다음 변수들을 설정하세요:
 
-## 🛠️ 설치 및 설정
-
-### 1. 패키지 설치
 ```bash
-pip install -r requirements.txt
+# CLOVA API 설정
+CLOVA_API_KEY=your_clova_api_key
+CLOVA_REQUEST_ID=your_request_id
+CLOVA_MODEL_ENDPOINT=/v3/chat-completions/HCX-005
+
+# 새로운 CLOVA API 설정 (vector_db_1_analyzer용)
+NEW_CLOVA_API_KEY=your_new_clova_api_key
+NEW_CLOVA_REQUEST_ID=4997d0ab4e434139bd982084de885077
+NEW_CLOVA_MODEL_ENDPOINT=/v3/tasks/yl1fvofj/chat-completions
+
+# 네이버 API 설정
+NAVER_CLIENT_ID=your_naver_client_id
+NAVER_CLIENT_SECRET=your_naver_client_secret
+
+# Naver Cloud Outbound Mailer API 설정
+NAVER_CLOUD_ACCESS_KEY=your_access_key_here
+NAVER_CLOUD_SECRET_KEY=your_secret_key_here
+NAVER_CLOUD_MAIL_ENDPOINT=https://mail.apigw.ntruss.com/api/v1
+
+# 이메일 발송 설정
+EMAIL_SENDER_ADDRESS=your_sender_email@yourdomain.com
+EMAIL_SENDER_NAME=주식시장분석봇
+EMAIL_RECIPIENTS=recipient1@example.com,recipient2@example.com
 ```
 
-### 2. 환경 변수 설정
-```bash
-# env_template.txt를 .env로 복사
-cp env_template.txt .env
+### 2. Naver Cloud Platform 설정
 
-# .env 파일에 실제 API 키 입력
-CLOVA_API_KEY=your_actual_clova_api_key
-CLOVA_EMBEDDING_REQUEST_ID=your_actual_embedding_request_id
-CLOVA_CHAT_REQUEST_ID=your_actual_chat_request_id
+1. [Naver Cloud Platform](https://www.ncloud.com/)에 가입
+2. Cloud Outbound Mailer 서비스 신청
+3. API 인증키 생성 (마이페이지 > 계정관리 > 인증키 관리)
+4. 발송자 이메일 주소 등록 및 인증
+
+## 사용법
+
+### 1. 전체 시스템 실행
+
+```bash
+python test_main.py
 ```
 
-## 🎯 사용법
+이 명령어로 다음 작업들이 순차적으로 실행됩니다:
+- 데이터 수집 (KRX, 네이버 뉴스)
+- 벡터 데이터베이스 구축
+- AI 분석 및 보고서 생성
+- 이메일 발송
 
-### 메인 실행
+### 2. 이메일 발송만 테스트
+
 ```bash
-python main.py
+python test_email_sender.py
 ```
 
-### 테스트 실행
+### 3. 독립적인 이메일 발송
+
 ```bash
-python test_clova_api.py
+python email_sender.py
 ```
 
-### 인덱스 재구축
-```bash
-python main.py --rebuild
-```
-
-## 📁 파일 구조
+## 파일 구조
 
 ```
 RAG/code/
-├── llamaindex_rag_system.py    # 메인 RAG 시스템 클래스
-├── main.py                     # 메인 실행 파일
-├── test_clova_api.py           # CLOVA API 테스트
-├── clova_api_client.py         # CLOVA API 클라이언트 (레거시)
-├── config.py                   # 설정 파일
-├── requirements.txt            # 필요한 패키지 목록
-├── env_template.txt            # 환경 변수 템플릿
-└── README.md                   # 이 파일
+├── test_main.py              # 메인 실행 스크립트
+├── email_sender.py           # 이메일 발송 서비스
+├── test_email_sender.py      # 이메일 발송 테스트
+├── faiss_vector_api.py       # FAISS API 서버
+├── faiss_vector_db1_api.py   # Vector DB1 API 서버
+├── vector_db_1_analyzer.py   # Vector DB1 분석기
+├── hybrid_vector_manager.py  # 벡터 관리자
+├── clova_embedding.py        # CLOVA 임베딩 API
+├── clova_segmentation.py     # CLOVA 세그멘테이션 API
+├── news_content_extractor.py # 뉴스 본문 추출기
+└── ...
 ```
 
-## 🔧 시스템 아키텍처
+## 이메일 발송 기능
 
-1. **데이터 로딩**: CSV 파일을 LlamaIndex Document로 변환
-2. **텍스트 청킹**: SentenceSplitter를 사용한 텍스트 분할
-3. **임베딩 생성**: CLOVA X API를 사용한 벡터 임베딩
-4. **벡터 검색**: FAISS 기반 유사도 검색
-5. **답변 생성**: HyperCLOVA X를 사용한 응답 생성
+### HTML 템플릿
 
-## 🎮 메뉴 옵션
+보고서는 전문적인 HTML 이메일 템플릿으로 발송됩니다:
 
-1. **단일 질문하기**: 한 번의 질문에 답변
-2. **대화형 채팅 모드**: 연속적인 대화 가능
-3. **시스템 정보 보기**: 현재 시스템 상태 확인
-4. **종료**: 시스템 종료
+- 반응형 디자인
+- 전문적인 스타일링
+- 투자 유의사항 포함
+- 자동 생성 표시
 
-## 📊 성능 최적화
+### 발송 설정
 
-- CSV 파일당 최대 1000행만 처리하여 메모리 사용량 제한
-- 벡터 인덱스 자동 저장/로드
-- 대화 내용 JSON 형태로 저장
+- **발송자**: 설정된 이메일 주소
+- **수신자**: .env 파일에 설정된 이메일 목록
+- **개별 발송**: 각 수신자에게 개별적으로 발송
+- **광고성 메일 아님**: 일반 정보성 메일로 분류
 
-## 🔍 문제 해결
+### API 인증
 
-### 일반적인 오류
-1. **API 키 오류**: .env 파일의 API 키 확인
-2. **임베딩 실패**: CLOVA API 키 및 Request ID 확인
-3. **답변 생성 실패**: HyperCLOVA X API 연결 확인
+Naver Cloud Outbound Mailer API는 HMAC-SHA256 서명을 사용합니다:
 
-### 로그 확인
-시스템 실행 시 상세한 로그가 출력되므로 오류 발생 시 로그를 확인하세요.
+1. 타임스탬프 생성
+2. 메시지 문자열 구성
+3. Secret Key로 HMAC-SHA256 서명 생성
+4. Base64 인코딩
 
-## 📚 참고 자료
+## 주의사항
 
-- [LlamaIndex 공식 문서](https://docs.llamaindex.ai/)
-- [CLOVA X API 문서](https://www.ncloud.com/product/aiService/clovaStudio)
-- [NAVER Cloud Platform Forum - CLOVA Studio RAG 구현](https://www.ncloud-forums.com/topic/307/#comment-1219) 
+1. **API 키 보안**: .env 파일을 Git에 커밋하지 마세요
+2. **이메일 발송 제한**: Naver Cloud Platform의 발송 제한을 확인하세요
+3. **수신자 동의**: 수신자들의 이메일 수신 동의를 받으세요
+4. **투자 유의사항**: 이메일에 투자 유의사항이 포함되어 있습니다
+
+## 문제 해결
+
+### 이메일 발송 실패 시
+
+1. API 키 확인
+2. 발송자 이메일 인증 확인
+3. 수신자 이메일 형식 확인
+4. 네트워크 연결 확인
+
+### API 오류 코드
+
+- `400`: 잘못된 요청
+- `403`: 권한 없음
+- `500`: 서버 오류
+
+## 라이선스
+
+이 프로젝트는 교육 및 연구 목적으로 제작되었습니다. 

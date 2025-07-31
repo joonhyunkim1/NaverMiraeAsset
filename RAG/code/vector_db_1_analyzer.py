@@ -196,6 +196,8 @@ class VectorDB1Analyzer:
         prompt = f"""
 당신은 주식 시장 분석 전문가입니다. 제공된 데이터를 바탕으로 요구사항에 따라 오늘 하루 주목해야 할 종목들을 정리한 보고서를 작성해주세요.
 
+중요: 인사말이나 서론 없이 바로 분석 내용을 시작하세요.
+
 다음은 분석할 데이터입니다:
 
 {chr(20).join(text_contents[:20])}  # 처음 10개 텍스트만 사용
@@ -203,9 +205,9 @@ class VectorDB1Analyzer:
 보고서 작성 요구사항:
 1. 총 글자수: 4000자 정도
 2. 구조:
-   - 서론: 오늘 주목해야할 종목명 3가지
-   - 본론: 주목해야 할 종목별 상세 분석 (3개 종목)
-   - 결론: 투자 전략 및 주의사항
+   - 오늘 주목해야할 종목명 3가지
+   - 주목해야 할 종목별 상세 분석 (3개 종목)
+   - 투자 전략 및 주의사항
 
 3. 각 종목별 분석 내용:
    - 종목명 및 종목코드
@@ -216,6 +218,7 @@ class VectorDB1Analyzer:
 
 4. 전문적이고 객관적인 톤으로 작성
 5. 구체적인 데이터와 근거 제시
+6. '서론', '본론', '결론' 등의 단어를 사용하지 말고 자연스럽게 연결
 
 위 데이터를 바탕으로 종합적인 주식 시장 분석 보고서를 작성해주세요.
 """
@@ -225,13 +228,11 @@ class VectorDB1Analyzer:
         """보고서를 파일로 저장"""
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            report_file = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data_2") / f"vector_db_1_report_{timestamp}.txt"
+            # 현재 스크립트 위치를 기준으로 상대 경로 설정
+            current_dir = Path(__file__).parent
+            report_file = current_dir.parent / "data_2" / f"vector_db_1_report_{timestamp}.txt"
             
             with open(report_file, 'w', encoding='utf-8') as f:
-                f.write(f"# Vector DB1 기반 주식 시장 분석 보고서\n")
-                f.write(f"생성일시: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write(f"분석 벡터 수: {len(report)}자\n")
-                f.write(f"=" * 60 + "\n\n")
                 f.write(report)
             
             print(f"💾 보고서 저장 완료: {report_file}")
