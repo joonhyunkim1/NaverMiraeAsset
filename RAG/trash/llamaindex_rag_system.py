@@ -498,6 +498,79 @@ class LlamaIndexRAGSystem:
                 "error": f"답변 생성 실패: {e}",
                 "query": query
             }
+    
+    def ask_with_vectors(self, query: str) -> Dict[str, Any]:
+        """임베딩 벡터를 직접 사용하여 질문에 답변"""
+        if self.index is None:
+            return {
+                "success": False,
+                "error": "인덱스가 구축되지 않았습니다."
+            }
+            
+        try:
+            print(f"질문: {query}")
+            print("임베딩 벡터 정보 수집 중...")
+            
+            # 모든 노드의 임베딩 벡터 수집
+            all_nodes = list(self.index.docstore.docs.values())
+            embedding_vectors = []
+            vector_metadata = []
+            
+            print(f"총 {len(all_nodes)}개의 노드에서 벡터 정보 수집 중...")
+            
+            for i, node in enumerate(all_nodes):
+                try:
+                    # 노드의 임베딩 벡터 가져오기
+                    if hasattr(node, 'embedding') and node.embedding is not None:
+                        embedding_vectors.append(node.embedding)
+                        vector_metadata.append({
+                            "filename": node.metadata.get('filename', 'Unknown'),
+                            "type": node.metadata.get('type', 'Unknown'),
+                            "node_index": i,
+                            "vector_dimension": len(node.embedding)
+                        })
+                    else:
+                        print(f"노드 {i}에 임베딩 벡터가 없습니다.")
+                except Exception as e:
+                    print(f"노드 {i} 벡터 수집 오류: {e}")
+            
+            if not embedding_vectors:
+                return {
+                    "success": False,
+                    "error": "임베딩 벡터를 찾을 수 없습니다.",
+                    "query": query
+                }
+            
+            print(f"수집된 벡터: {len(embedding_vectors)}개")
+            print(f"벡터 차원: {len(embedding_vectors[0])}차원")
+            
+            # 임베딩 벡터를 HyperCLOVA X에 전달
+            print("HyperCLOVA X로 벡터 기반 답변 생성 중...")
+            
+            answer = self.chat_client.create_vector_based_response(query, embedding_vectors, vector_metadata)
+            
+            if answer:
+                return {
+                    "success": True,
+                    "query": query,
+                    "answer": answer,
+                    "vector_count": len(embedding_vectors),
+                    "vector_dimension": len(embedding_vectors[0]) if embedding_vectors else 0,
+                    "vector_metadata": vector_metadata
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "HyperCLOVA X 벡터 기반 답변 생성 실패",
+                    "query": query
+                }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"벡터 기반 답변 생성 실패: {e}",
+                "query": query
+            }
             
     def get_system_info(self) -> Dict[str, Any]:
         """시스템 정보 반환"""

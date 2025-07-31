@@ -5,11 +5,12 @@ from dotenv import load_dotenv
 # .env 파일 로드
 load_dotenv()
 
-# 프로젝트 루트 디렉토리
-PROJECT_ROOT = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG")
+# 현재 스크립트 위치를 기준으로 상대 경로 설정
+current_dir = Path(__file__).parent
+PROJECT_ROOT = current_dir.parent
 
 # 데이터 디렉토리
-DATA_DIR = PROJECT_ROOT / "/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data"
+DATA_DIR = PROJECT_ROOT / "data"
 
 # 모델 설정
 MODEL_NAME = "MLP-KTLim/llama-3-Korean-Bllossom-8B"

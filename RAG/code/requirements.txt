@@ -1,10 +1,28 @@
-llama-index==0.10.0
+# 기본 라이브러리
+python-dotenv==1.0.0
+requests==2.31.0
 pandas==2.0.3
 numpy==1.24.3
-faiss-cpu==1.7.4
-python-dotenv==1.0.0
-tqdm==4.66.1
-requests==2.31.0
+
+# 웹 스크래핑 및 파싱
 beautifulsoup4==4.12.3
-lxml==4.9.3 
+lxml==4.9.3
+
+# 벡터 데이터베이스 및 검색
+faiss-cpu==1.7.4
+
+# 웹 프레임워크 (FAISS API 서버용)
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
+
+# 주식 데이터 수집
+finance-datareader==0.9.50
+python-dateutil==2.8.2
+
+# 진행률 표시
+tqdm==4.66.1
+
+# LlamaIndex (데이터 처리 방식 참고용)
+llama-index==0.10.0
 llama-index-readers-web==0.1.23

@@ -233,7 +233,7 @@ class StockDataCollector:
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"auto_collected_stocks_{timestamp}.json"
-        file_path = self.data_dir / filename
+        file_path = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data_2") / filename
         
         try:
             # 저장할 데이터 구성

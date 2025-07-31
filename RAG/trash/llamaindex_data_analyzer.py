@@ -109,27 +109,34 @@ class LlamaIndexDataAnalyzer:
 ```
 """
             
-            # RAG 시스템으로 질문
-            result = self.rag_system.ask(analysis_query)
+            # 벡터 기반 RAG 시스템으로 질문 (임베딩 벡터 직접 사용)
+            print("🔍 임베딩 벡터 기반 분석 시작...")
+            result = self.rag_system.ask_with_vectors(analysis_query)
             
             if result["success"]:
-                print("✅ RAG 분석 완료")
+                print("✅ 벡터 기반 RAG 분석 완료")
                 print(f"📝 응답 길이: {len(result['answer'])} 문자")
                 
-                # 소스 정보 출력
-                if result.get("source_nodes"):
-                    print(f"📚 참고한 문서: {len(result['source_nodes'])}개")
-                    for i, node in enumerate(result["source_nodes"][:3], 1):
-                        filename = node['metadata'].get('filename', 'Unknown')
-                        print(f"  {i}. {filename}")
+                # 벡터 정보 출력
+                if result.get("vector_count"):
+                    print(f"📊 사용된 벡터: {result['vector_count']}개")
+                    print(f"📊 벡터 차원: {result.get('vector_dimension', 'N/A')}차원")
+                
+                # 벡터 메타데이터 정보 출력
+                if result.get("vector_metadata"):
+                    print(f"📚 벡터 메타데이터: {len(result['vector_metadata'])}개")
+                    for i, metadata in enumerate(result["vector_metadata"][:3], 1):
+                        filename = metadata.get('filename', 'Unknown')
+                        vector_type = metadata.get('type', 'Unknown')
+                        print(f"  {i}. {filename} ({vector_type})")
                 
                 return result["answer"]
             else:
-                print(f"❌ RAG 분석 실패: {result.get('error', 'Unknown error')}")
+                print(f"❌ 벡터 기반 RAG 분석 실패: {result.get('error', 'Unknown error')}")
                 return None
                 
         except Exception as e:
-            print(f"❌ RAG 분석 오류: {e}")
+            print(f"❌ 벡터 기반 RAG 분석 오류: {e}")
             return None
     
     def save_analysis_result(self, result: str, filename: str = None) -> str:
@@ -180,12 +187,12 @@ class LlamaIndexDataAnalyzer:
             print("❌ 리트리버 설정 실패")
             return False
         
-        # 3. RAG 분석 실행
-        print("\n3️⃣ RAG 분석 실행 중...")
+        # 3. 벡터 기반 RAG 분석 실행
+        print("\n3️⃣ 벡터 기반 RAG 분석 실행 중...")
         analysis_result = self.analyze_with_rag()
         
         if analysis_result is None:
-            print("❌ RAG 분석 실패")
+            print("❌ 벡터 기반 RAG 분석 실패")
             return False
         
         # 4. 분석 결과 저장
@@ -193,11 +200,11 @@ class LlamaIndexDataAnalyzer:
         saved_path = self.save_analysis_result(analysis_result)
         
         if saved_path:
-            print(f"\n🎉 LlamaIndex RAG 분석 완료!")
+            print(f"\n🎉 벡터 기반 LlamaIndex RAG 분석 완료!")
             print(f"📁 결과 파일: {saved_path}")
             return True
         
-        print("\n❌ 분석 결과 저장 실패")
+        print("\n❌ 벡터 기반 분석 결과 저장 실패")
         return False
 
 def main():
