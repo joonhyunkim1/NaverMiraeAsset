@@ -16,7 +16,6 @@ RAG/data_2
 .DS_Store
 *.csv
 *.docx
-env_template.txt
 RAG/code/.env
 *.zip
 *.pkg

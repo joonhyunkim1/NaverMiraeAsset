@@ -1,0 +1,22 @@
+# .env 이름의 파일을 code 폴더 안에 만든 후 아래 내용을 채워넣고 코드를 실행하시기 바랍니다.
+
+# CLOVA X API 키 (공통)
+CLOVA_API_KEY=
+
+# CLOVA X Embedding Request ID (임베딩 전용)
+CLOVA_EMBEDDING_REQUEST_ID=
+
+# CLOVA X Chat Request ID (답변 생성 전용)
+CLOVA_CHAT_REQUEST_ID=
+
+# 네이버 뉴스 검색 API 키
+NAVER_CLIENT_ID=
+NAVER_CLIENT_SECRET=
+
+# CLOVA Segmentation Request ID
+CLOVA_SEGMENTATION_REQUEST_ID=
+
+# 보고서 작성용 튜닝된 CLOVA 모델 설정
+NEW_CLOVA_API_KEY=
+NEW_CLOVA_REQUEST_ID=
+NEW_CLOVA_MODEL_ENDPOINT=
