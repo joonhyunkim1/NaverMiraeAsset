@@ -167,7 +167,7 @@ class VectorDB1Analyzer:
                     "content": analysis_prompt
                 }
             ],
-            "maxTokens": 4000,  # 4000자 보고서
+            "maxTokens": 3500,  # 3500자 보고서
             "temperature": 0.5,
             "topP": 0.8,
             "topK": 0,
@@ -203,7 +203,7 @@ class VectorDB1Analyzer:
 {chr(20).join(text_contents[:20])}  # 처음 10개 텍스트만 사용
 
 보고서 작성 요구사항:
-1. 총 글자수: 4000자 정도
+1. 총 글자수: 3500자 정도
 2. 구조:
    - 오늘 주목해야할 종목명 3가지
    - 주목해야 할 종목별 상세 분석 (3개 종목)
@@ -219,6 +219,103 @@ class VectorDB1Analyzer:
 4. 전문적이고 객관적인 톤으로 작성
 5. 구체적인 데이터와 근거 제시
 6. '서론', '본론', '결론' 등의 단어를 사용하지 말고 자연스럽게 연결
+
+위 데이터를 바탕으로 종합적인 주식 시장 분석 보고서를 작성해주세요.
+"""
+        return prompt
+    
+    def analyze_vectors_with_extracted_stocks(self, extracted_stocks: List[str]) -> str:
+        """추출된 종목명을 사용하여 벡터 데이터 분석"""
+        print("🔍 추출된 종목명을 사용한 vector_db_1 벡터 데이터 분석 중...")
+        
+        # 검색 쿼리 설정 (추출된 종목명 포함)
+        search_query = f"주목해야 할 종목 주가 동향 뉴스 이슈 {', '.join(extracted_stocks)}"
+        
+        # FAISS 벡터 검색 수행
+        print(f"🔍 검색 쿼리: {search_query}")
+        search_results = self.search_vectors(search_query, top_k=15)  # 더 많은 결과 검색
+        
+        if not search_results:
+            print("❌ 검색 결과가 없습니다.")
+            return ""
+        
+        print(f"✅ 검색 완료: {len(search_results)}개 결과")
+        
+        # 검색 결과에서 텍스트 내용 추출
+        text_contents = []
+        for result in search_results:
+            text_content = result.get('text_content', '')
+            if text_content:
+                text_contents.append(text_content)
+        
+        # 분석용 프롬프트 구성 (추출된 종목명 포함)
+        analysis_prompt = self._create_analysis_prompt_with_extracted_stocks(text_contents, extracted_stocks)
+        
+        print("🤖 CLOVA 모델에게 보고서 요청 중...")
+        
+        # 새로운 CLOVA 모델 형식 사용 (messages 형식)
+        request_data = {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": analysis_prompt
+                }
+            ],
+            "maxTokens": 3500,  # 3500자 보고서
+            "temperature": 0.5,
+            "topP": 0.8,
+            "topK": 0,
+            "repetitionPenalty": 1.1,
+            "stop": [],
+            "includeAiFilters": True,
+            "seed": 0
+        }
+        
+        try:
+            response_text = self.clova_client.execute(request_data)
+            
+            if response_text == 'Error':
+                print("❌ CLOVA API 호출 실패")
+                return ""
+            
+            print(f"✅ 보고서 생성 완료: {len(response_text)}자")
+            return response_text
+            
+        except Exception as e:
+            print(f"❌ CLOVA 분석 실패: {e}")
+            return ""
+    
+    def _create_analysis_prompt_with_extracted_stocks(self, text_contents: List[str], extracted_stocks: List[str]) -> str:
+        """추출된 종목명을 포함한 분석용 프롬프트 생성"""
+        prompt = f"""
+당신은 주식 시장 분석 전문가입니다. 제공된 데이터를 바탕으로 요구사항에 따라 오늘 하루 주목해야 할 종목들을 정리한 보고서를 작성해주세요.
+
+중요: 인사말이나 서론 없이 바로 분석 내용을 시작하세요.
+
+다음은 분석할 데이터입니다:
+
+{chr(20).join(text_contents[:20])}  # 처음 20개 텍스트만 사용
+
+추출된 주목 종목명: {', '.join(extracted_stocks)}
+
+보고서 작성 요구사항:
+1. 총 글자수: 3500자 정도
+2. 구조:
+   - 오늘 주목해야할 종목명 3가지 (반드시 추출된 종목명 중에서 선택)
+   - 주목해야 할 종목별 상세 분석 (3개 종목)
+   - 투자 전략 및 주의사항
+
+3. 각 종목별 분석 내용:
+   - 종목명 및 종목코드
+   - 최근 주가 동향
+   - 관련 뉴스 및 이슈
+   - 투자 포인트
+   - 위험 요소
+
+4. 전문적이고 객관적인 톤으로 작성
+5. 구체적인 데이터와 근거 제시
+6. '서론', '본론', '결론' 등의 단어를 사용하지 말고 자연스럽게 연결
+7. 반드시 추출된 종목명 중에서 3개를 선택하여 분석
 
 위 데이터를 바탕으로 종합적인 주식 시장 분석 보고서를 작성해주세요.
 """
@@ -242,18 +339,24 @@ class VectorDB1Analyzer:
             print(f"❌ 보고서 저장 실패: {e}")
             return ""
     
-    def run_analysis(self) -> bool:
+    def run_analysis(self, extracted_stocks=None) -> bool:
         """전체 분석 프로세스 실행"""
         print("\n" + "=" * 60)
-        print("🔍 Vector DB1 기반 주식 시장 분석")
+        print("🔍 Vector DB1 기반 오늘 이슈가 있을 것으로 예상되는 주목 종목 분석")
         print("=" * 60)
         
         # 1. FAISS API 서버 상태 확인
         if not self.check_faiss_api_server():
             return False
         
-        # 2. 분석 실행
-        report = self.analyze_vectors()
+        # 2. 분석 실행 (추출된 종목명 전달)
+        if extracted_stocks:
+            print(f"📋 추출된 종목명을 사용한 분석: {extracted_stocks}")
+            report = self.analyze_vectors_with_extracted_stocks(extracted_stocks)
+        else:
+            print("⚠️ 추출된 종목명이 없어 일반 분석을 수행합니다.")
+            report = self.analyze_vectors()
+        
         if not report:
             return False
         

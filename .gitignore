@@ -10,6 +10,8 @@ RAG/__pycache__/
 /Individual_Stock_Search
 RAG/daily_report
 RAG/trash
+RAG/data_2
+
 
 .DS_Store
 *.csv
