@@ -45,8 +45,8 @@ class VectorDB1Manager:
     def load_vectors(self) -> bool:
         """vector_db_1의 벡터와 메타데이터 로드"""
         try:
-            vectors_file = self.vector_dir / "hybrid_vectors.pkl"
-            metadata_file = self.vector_dir / "hybrid_metadata.json"
+            vectors_file = self.vector_dir / "vector_db_1_vectors.pkl"
+            metadata_file = self.vector_dir / "vector_db_1_metadata.json"
             
             if not vectors_file.exists():
                 print("❌ vector_db_1의 벡터 파일을 찾을 수 없습니다.")
