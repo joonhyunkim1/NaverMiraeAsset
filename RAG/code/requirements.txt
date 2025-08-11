@@ -1,28 +1,28 @@
-# 기본 라이브러리
+# Basic libraries
 python-dotenv==1.0.0
 requests==2.31.0
 pandas==2.0.3
 numpy==1.24.3
 
-# 웹 스크래핑 및 파싱
+# Web scraping and parsing
 beautifulsoup4==4.12.3
 lxml==4.9.3
 
-# 벡터 데이터베이스 및 검색
+# Vector database and search
 faiss-cpu==1.7.4
 
-# 웹 프레임워크 (FAISS API 서버용)
+# Web framework (for FAISS API server)
 fastapi==0.104.1
 uvicorn==0.24.0
 pydantic==2.5.0
 
-# 주식 데이터 수집
+# Stock data collection
 finance-datareader==0.9.50
 python-dateutil==2.8.2
 
-# 진행률 표시
+# Progress bar
 tqdm==4.66.1
 
-# LlamaIndex (데이터 처리 방식 참고용)
+# LlamaIndex (for data processing reference)
 llama-index==0.10.0
 llama-index-readers-web==0.1.23
