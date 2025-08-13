@@ -26,11 +26,13 @@ class HybridVectorManager:
     def __init__(self, data_dir: str = None):
         # 현재 스크립트 위치를 기준으로 상대 경로 설정
         current_dir = Path(__file__).parent
+        project_root = current_dir.parent  # RAG 폴더
+        
         if data_dir is None:
-            self.data_dir = current_dir.parent / "data"
+            self.data_dir = project_root / "data"
         else:
             self.data_dir = Path(data_dir)
-        self.vector_dir = current_dir.parent / "vector_db"
+        self.vector_dir = project_root / "vector_db"
         self.vector_dir.mkdir(exist_ok=True)
         
         # CLOVA 클라이언트 초기화

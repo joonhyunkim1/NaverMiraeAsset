@@ -52,6 +52,7 @@ class StockMarketRAGSystem:
             
             directories = [
                 self.project_root,
+                self.project_root / "data",  # data 폴더 추가
                 self.data_1_dir,
                 self.data_2_dir,
                 self.vector_db_dir,

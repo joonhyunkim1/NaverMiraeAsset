@@ -183,7 +183,8 @@ class KRXAPIClient:
                     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
             
             # CSV 파일을 지정된 경로에 저장
-            data_dir = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data")
+            current_dir = Path(__file__).parent
+            data_dir = current_dir.parent / "data"
             data_dir.mkdir(parents=True, exist_ok=True)
             
             # timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

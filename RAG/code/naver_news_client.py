@@ -97,7 +97,8 @@ class NaverNewsClient:
             #     filename = f"naver_news_{timestamp}.json"
             filename = "naver_news_recent_30.json"
             # data 폴더 경로
-            data_dir = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/data")
+            current_dir = Path(__file__).parent
+            data_dir = current_dir.parent / "data"
             data_dir.mkdir(exist_ok=True)
             
             file_path = data_dir / filename

@@ -15,7 +15,8 @@ import os
 from dotenv import load_dotenv
 
 # 환경변수 로드
-env_path = Path("/Users/Chris/Desktop/JH/MiraeassetNaver/RAG/code/.env")
+current_dir = Path(__file__).parent
+env_path = current_dir / ".env"
 load_dotenv(env_path)
 
 class CompletionExecutor:
